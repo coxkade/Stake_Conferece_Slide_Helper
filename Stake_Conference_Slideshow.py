@@ -5,6 +5,8 @@ from kivy.core.window import Window
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.label import Label
+import argparse
+import threading
 
 def rgb_shift(val):
     ''' Change 0-256 Rgb Value to a number between 0 and 1 '''
@@ -24,16 +26,16 @@ class SlideTextBox(TextInput):
         box_width = self.width
         max_size = max(self._lines_rects, key=lambda r: r.size[0]).size
         left_pad = (box_width - max_size[0])/2
-        self.padding_x = [left_pad, left_pad]
+        self.padding_x = [left_pad, 0]
         top_pad = (self.height - max_size[1])/2
-        self.padding_y = [top_pad, top_pad]
+        self.padding_y = [top_pad, 0]
 
     def make_text_invisible(self):
         self.background_color = (0, 0, 0, 0)
         self.foreground_color = (1, 1, 1, 0)
 
     def make_text_visible(self):
-        self.background_color = (0, 0, 0, 1)
+        self.background_color = (0, 0, 0, .75)
         self.foreground_color = (1, 1, 1, 1)
 
     def set_text(self,text):
@@ -59,29 +61,48 @@ class SlideLayout(FloatLayout):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
         self._keyboard = None
 
-    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
+    def __inc_slide_num(self):
+        global File_Line_Array
+        self.slide_num += 1
+        if self.slide_num >= len(File_Line_Array)-1:
+            self.slide_num = len(File_Line_Array)-1
+
+    def __dec_slide_num(self):
+        self.slide_num -= 1
+        if -1 > self.slide_num:
+            self.slide_num = 0
+
+    def _on_keyboard_up(self, keyboard, keycode, text, modifiers):
+        self.lock.acquire()
         if keycode[1] == 'left':
-            self.slide_num -= 1
+            self.__dec_slide_num()
             self.__update_text()
         elif keycode[1] == 'right':
-            self.slide_num += 1
+            self.__inc_slide_num()
             self.__update_text()
         elif keycode[1] == 'up':
-            self.slide_num += 1
+            self.__inc_slide_num()
             self.__update_text()
         elif keycode[1] == 'spacebar':
-            self.slide_num += 1
+            self.__inc_slide_num()
             self.__update_text()
         elif keycode[1] == 'down':
-            self.slide_num -= 1
+            self.__dec_slide_num()
             self.__update_text()
+        self.lock.release()
         return True
 
     def __update_text(self):
-        text = "Slide Num is Now: {}".format(self.slide_num)
-        print(text)
+        global File_Line_Array
+        text = File_Line_Array[self.slide_num]
+        text = text.strip('\n')
+        text = text.strip('\r')
+        debugtext = "Slide Num is Now: {}".format(self.slide_num)
+        print("All Lines: {}".format(File_Line_Array))
+        print("Display Line: {}".format(text))
+        print(debugtext)
         print(self.ids)
-        if 0 == self.slide_num:
+        if -1 == self.slide_num or "FILE_END" == text:
             self.ids.slidetext.set_text('')
         else:
             self.ids.slidetext.set_text(text)
@@ -89,16 +110,12 @@ class SlideLayout(FloatLayout):
     def __init__(self, **kwargs):
         # self.background_color_set = False
         FloatLayout.__init__(self, **kwargs)
-        self.slide_num = 0
+        self.slide_num = -1
+        self.lock = threading.Lock()
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
-        self._keyboard.bind(on_key_down=self._on_keyboard_down)
+        self._keyboard.bind(on_key_down=self._on_keyboard_up)
 
     def do_layout(self, *largs, **kwargs):
-        # if False == self.background_color_set:
-        #     for gitem in self.ids.main_Canvas.canvas.get_group('background'):
-        #         if isinstance(gitem, Color):
-        #             gitem.rgba = (0, 0, 0, 1)
-        #             self.background_color_set = True
         FloatLayout.do_layout(self, *largs, **kwargs)
 
 
@@ -115,9 +132,21 @@ class SongSlide(App):
         print("SongSlide on Start")
         App.on_start(self, **kwargs)
 
+def load_file_data(filename):
+    global File_Line_Array
+    File_Line_Array = []
+    with open(filename, 'r') as reader:
+        for line in reader:
+            File_Line_Array.append(line)
+    print("Read {} Lines From the File".format(len(File_Line_Array)))
+
 if __name__ == "__main__":
-    Window.clearcolor = (rgb_shift(0), rgb_shift(71), rgb_shift(187), 1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("FileIn", help="The File Containing the Text")
+    args = parser.parse_args()
+    load_file_data(args.FileIn)
     print("Creating the Application")
+    Window.clearcolor = (rgb_shift(0), rgb_shift(71), rgb_shift(187), 1)
     Main_Object = SongSlide()
     print("Running the Application")
     Main_Object.run()
