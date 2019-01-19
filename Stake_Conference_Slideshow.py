@@ -4,9 +4,10 @@ from kivy.graphics import Color, Rectangle
 from kivy.core.window import Window
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.textinput import TextInput
-from kivy.uix.label import Label
-import argparse
+from kivy.properties import ObjectProperty
+from kivy.uix.popup import Popup
 import threading
+import os
 
 def rgb_shift(val):
     ''' Change 0-256 Rgb Value to a number between 0 and 1 '''
@@ -57,6 +58,27 @@ class SlideTextBox(TextInput):
             
 
 class SlideLayout(FloatLayout):
+    loadfile = ObjectProperty(None)
+
+    def show_load(self):
+        content = LoadDialog(load=self.load, cancel=self.dismiss_popup)
+        self._popup = Popup(title="Song File", content=content,
+                            size_hint=(0.9, 0.9))
+        self._popup.open()
+
+    def dismiss_popup(self):
+        self._popup.dismiss()
+        self.__input_diog_open = False
+        # App.get_running_app().stop()
+
+    def load(self, path, filename):
+        fullname = os.path.join(path, filename[0])
+        print("Loading the File: {}".format(fullname))
+        if os.path.isfile(fullname):
+            load_file_data(fullname)
+            self.__input_file = fullname
+        self.dismiss_popup()
+
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
         self._keyboard = None
@@ -73,22 +95,29 @@ class SlideLayout(FloatLayout):
             self.slide_num = 0
 
     def _on_keyboard_up(self, keyboard, keycode, text, modifiers):
+        if keycode[1] == 'escape':
+            App.get_running_app().stop()
         self.lock.acquire()
-        if keycode[1] == 'left':
-            self.__dec_slide_num()
-            self.__update_text()
-        elif keycode[1] == 'right':
-            self.__inc_slide_num()
-            self.__update_text()
-        elif keycode[1] == 'up':
-            self.__inc_slide_num()
-            self.__update_text()
-        elif keycode[1] == 'spacebar':
-            self.__inc_slide_num()
-            self.__update_text()
-        elif keycode[1] == 'down':
-            self.__dec_slide_num()
-            self.__update_text()
+        if None == self.__input_file and False == self.__input_diog_open:
+            self.__input_diog_open = True
+            self.show_load()
+        elif False == self.__input_diog_open:
+            print(keycode[1])
+            if keycode[1] == 'left':
+                self.__dec_slide_num()
+                self.__update_text()
+            elif keycode[1] == 'right':
+                self.__inc_slide_num()
+                self.__update_text()
+            elif keycode[1] == 'up':
+                self.__inc_slide_num()
+                self.__update_text()
+            elif keycode[1] == 'spacebar':
+                self.__inc_slide_num()
+                self.__update_text()
+            elif keycode[1] == 'down':
+                self.__dec_slide_num()
+                self.__update_text()
         self.lock.release()
         return True
 
@@ -108,16 +137,20 @@ class SlideLayout(FloatLayout):
             self.ids.slidetext.set_text(text)
 
     def __init__(self, **kwargs):
-        # self.background_color_set = False
         FloatLayout.__init__(self, **kwargs)
         self.slide_num = -1
         self.lock = threading.Lock()
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_up)
+        self.__input_file = None
+        self.__input_diog_open = False
 
     def do_layout(self, *largs, **kwargs):
         FloatLayout.do_layout(self, *largs, **kwargs)
 
+class LoadDialog(FloatLayout):
+    load = ObjectProperty(None)
+    cancel = ObjectProperty(None)
 
 class SongSlide(App):
     def build(self):
@@ -141,11 +174,8 @@ def load_file_data(filename):
     print("Read {} Lines From the File".format(len(File_Line_Array)))
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("FileIn", help="The File Containing the Text")
-    args = parser.parse_args()
-    load_file_data(args.FileIn)
     print("Creating the Application")
+    Window.fullscreen = 'auto'
     Window.clearcolor = (rgb_shift(0), rgb_shift(71), rgb_shift(187), 1)
     Main_Object = SongSlide()
     print("Running the Application")
