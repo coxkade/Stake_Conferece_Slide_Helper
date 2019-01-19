@@ -40,7 +40,7 @@ class SlideTextBox(TextInput):
 
     def set_text(self,text):
         W_Ratio = 0.8
-        T_Ratio = 0.05
+        T_Ratio = 0.03
         if(0 == len(text)):
             self.make_text_invisible()
         else:
