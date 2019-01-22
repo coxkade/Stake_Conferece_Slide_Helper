@@ -69,7 +69,6 @@ class SlideLayout(FloatLayout):
     def dismiss_popup(self):
         self._popup.dismiss()
         self.__input_diog_open = False
-        # App.get_running_app().stop()
 
     def load(self, path, filename):
         fullname = os.path.join(path, filename[0])
@@ -102,6 +101,7 @@ class SlideLayout(FloatLayout):
             self.__input_diog_open = True
             self.show_load()
         elif False == self.__input_diog_open:
+            load_file_data(self.__input_file)
             print(keycode[1])
             if keycode[1] == 'left':
                 self.__dec_slide_num()
@@ -134,6 +134,9 @@ class SlideLayout(FloatLayout):
         if -1 == self.slide_num or "FILE_END" == text:
             self.ids.slidetext.set_text('')
         else:
+            # if len(text) > 0:
+            #     if text[0] == '#':
+            #         text = ''
             self.ids.slidetext.set_text(text)
 
     def __init__(self, **kwargs):
@@ -170,7 +173,11 @@ def load_file_data(filename):
     File_Line_Array = []
     with open(filename, 'r') as reader:
         for line in reader:
-            File_Line_Array.append(line)
+            if len(line) > 0:
+                if line[0] != '#':
+                    File_Line_Array.append(line)
+            else:
+                File_Line_Array.append(line)
     print("Read {} Lines From the File".format(len(File_Line_Array)))
 
 if __name__ == "__main__":
