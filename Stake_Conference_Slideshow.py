@@ -134,9 +134,9 @@ class SlideLayout(FloatLayout):
         if -1 == self.slide_num or "FILE_END" == text:
             self.ids.slidetext.set_text('')
         else:
-            # if len(text) > 0:
-            #     if text[0] == '#':
-            #         text = ''
+            if len(text) > 0:
+                if text[0] == '#':
+                    text = ''
             self.ids.slidetext.set_text(text)
 
     def __init__(self, **kwargs):
