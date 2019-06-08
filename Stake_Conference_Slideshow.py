@@ -26,7 +26,7 @@ class SlideTextBox(TextInput):
     def __Set_Padding(self):
         box_width = self.width
         max_size = max(self._lines_rects, key=lambda r: r.size[0]).size
-        left_pad = (box_width - max_size[0])/2
+        left_pad = 0
         self.padding_x = [left_pad, 0]
         top_pad = (self.height - max_size[1])/2
         self.padding_y = [top_pad, 0]
