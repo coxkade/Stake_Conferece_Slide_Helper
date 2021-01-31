@@ -8,6 +8,7 @@ from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
 import threading
 import os
+from time import sleep
 
 def rgb_shift(val):
     ''' Change 0-256 Rgb Value to a number between 0 and 1 '''
@@ -126,6 +127,8 @@ class SlideLayout(FloatLayout):
         text = File_Line_Array[self.slide_num]
         text = text.strip('\n')
         text = text.strip('\r')
+        self.ids.slidetext.set_text('')
+        sleep(.100)
         debugtext = "Slide Num is Now: {}".format(self.slide_num)
         print("All Lines: {}".format(File_Line_Array))
         print("Display Line: {}".format(text))
